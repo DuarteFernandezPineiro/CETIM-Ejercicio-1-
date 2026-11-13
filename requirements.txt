@@ -1,2 +1,6 @@
+# Shared project dependencies. Install through requirements-cpu.txt or
+# requirements-gpu-cu128.txt to select a reproducible PyTorch backend.
 matplotlib>=3.8,<4
 Pillow>=10,<14
+# Pinned API used for YOLOv8, YOLO11, and YOLO26 training.
+ultralytics==8.4.210

@@ -308,6 +308,11 @@ def main() -> None:
     args = parser.parse_args()
     dataset_dir = args.dataset_dir.expanduser().resolve()
     output_dir = args.output_dir.expanduser().resolve()
+    try:
+        dataset_reference = dataset_dir.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        # Keep generated artifacts portable when a custom dataset lives elsewhere.
+        dataset_reference = dataset_dir.name
     output_dir.mkdir(parents=True, exist_ok=True)
 
     results: dict[str, dict[str, Any]] = {}
@@ -347,7 +352,7 @@ def main() -> None:
 
     bbox_outside = sum(bool(box["bbox_out_of_bounds"]) for box in box_rows)
     summary = {
-        "dataset": str(dataset_dir),
+        "dataset": dataset_reference,
         "splits": {split: result["metrics"] for split, result in results.items()},
         "total_images": total_images,
         "total_objects": total_objects,
@@ -370,7 +375,7 @@ def main() -> None:
     lines = [
         "# CODD dataset audit",
         "",
-        f"- Dataset: `{dataset_dir}`",
+        f"- Dataset: `{dataset_reference}`",
         f"- Images: **{total_images:,}**",
         f"- Annotated objects: **{total_objects:,}**",
         f"- Classes: **{len(classes)}** ({', '.join(classes)})",

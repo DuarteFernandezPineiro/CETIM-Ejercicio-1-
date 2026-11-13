@@ -1,6 +1,6 @@
 # CODD dataset audit
 
-- Dataset: `Construction and Demolition Waste Object Detection Dataset  (CODD)` (ruta relativa a la raíz del ejercicio)
+- Dataset: `Construction and Demolition Waste Object Detection Dataset  (CODD)`
 - Images: **3,127**
 - Annotated objects: **16,519**
 - Classes: **10** (brick, concrete, foam, general_w, gypsum_board, pipes, plastic, stone, tile, wood)

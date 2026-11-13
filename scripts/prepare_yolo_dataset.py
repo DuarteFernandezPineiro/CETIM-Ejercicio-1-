@@ -41,6 +41,14 @@ def clamp(value: float, lower: float, upper: float) -> float:
     return min(max(value, lower), upper)
 
 
+def portable_path(path: Path) -> str:
+    """Return a repository-relative path, or only the basename for external paths."""
+    try:
+        return path.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return path.name
+
+
 def voc_to_yolo(
     xmin: float, ymin: float, xmax: float, ymax: float, image_width: int, image_height: int
 ) -> tuple[float, float, float, float, tuple[float, float, float, float]]:
@@ -71,7 +79,7 @@ def voc_to_yolo(
 def scan_split(source_dir: Path, split: str) -> dict[str, Any]:
     images_dir = source_dir / split
     if not images_dir.is_dir():
-        raise ValueError(f"Missing source split directory: {images_dir}")
+        raise ValueError(f"Missing source split directory: {split}")
 
     images = sorted(path for path in images_dir.iterdir() if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS)
     annotations = sorted(images_dir.glob("*.xml"))
@@ -98,25 +106,25 @@ def scan_split(source_dir: Path, split: str) -> dict[str, Any]:
             with Image.open(image_path) as image:
                 image_width, image_height = image.size
         except (OSError, UnidentifiedImageError) as exc:
-            raise ValueError(f"Cannot read image {image_path}: {exc}") from exc
+            raise ValueError(f"Cannot read image {split}/{image_path.name}: {exc}") from exc
 
         try:
             root = ET.parse(annotation_path).getroot()
         except (ET.ParseError, OSError) as exc:
-            raise ValueError(f"Cannot parse annotation {annotation_path}: {exc}") from exc
+            raise ValueError(f"Cannot parse annotation {split}/{annotation_path.name}: {exc}") from exc
 
         declared_filename = Path(root.findtext("filename", "")).name
         if declared_filename and declared_filename != image_path.name:
-            raise ValueError(f"{annotation_path}: filename is {declared_filename}, expected {image_path.name}")
+            raise ValueError(f"{split}/{annotation_path.name}: filename is {declared_filename}, expected {image_path.name}")
 
         size = root.find("size")
         if size is None:
-            raise ValueError(f"{annotation_path}: missing <size>")
+            raise ValueError(f"{split}/{annotation_path.name}: missing <size>")
         declared_width = int(size.findtext("width", "0") or 0)
         declared_height = int(size.findtext("height", "0") or 0)
         if (declared_width, declared_height) != (image_width, image_height):
             raise ValueError(
-                f"{annotation_path}: XML dimensions {declared_width}x{declared_height} "
+                f"{split}/{annotation_path.name}: XML dimensions {declared_width}x{declared_height} "
                 f"do not match image dimensions {image_width}x{image_height}"
             )
 
@@ -124,23 +132,23 @@ def scan_split(source_dir: Path, split: str) -> dict[str, Any]:
         for object_index, obj in enumerate(root.findall("object"), start=1):
             class_name = obj.findtext("name", "").strip()
             if class_name not in CLASS_IDS:
-                raise ValueError(f"{annotation_path}: unknown class {class_name!r}")
+                raise ValueError(f"{split}/{annotation_path.name}: unknown class {class_name!r}")
             bounds = obj.find("bndbox")
             if bounds is None:
-                raise ValueError(f"{annotation_path}: object {object_index} has no <bndbox>")
+                raise ValueError(f"{split}/{annotation_path.name}: object {object_index} has no <bndbox>")
             try:
                 xmin, ymin, xmax, ymax = (
                     float(bounds.findtext(name, "nan")) for name in ("xmin", "ymin", "xmax", "ymax")
                 )
             except (TypeError, ValueError) as exc:
-                raise ValueError(f"{annotation_path}: object {object_index} has invalid bbox coordinates") from exc
+                raise ValueError(f"{split}/{annotation_path.name}: object {object_index} has invalid bbox coordinates") from exc
 
             try:
                 cx, cy, width, height, clipped = voc_to_yolo(
                     xmin, ymin, xmax, ymax, image_width, image_height
                 )
             except ValueError as exc:
-                raise ValueError(f"{annotation_path}: object {object_index} ({class_name}): {exc}") from exc
+                raise ValueError(f"{split}/{annotation_path.name}: object {object_index} ({class_name}): {exc}") from exc
 
             class_instances[class_name] += 1
             label_lines.append(f"{CLASS_IDS[class_name]} {cx:.8f} {cy:.8f} {width:.8f} {height:.8f}")
@@ -218,7 +226,7 @@ def export_dataset(source_dir: Path, output_dir: Path, results: dict[str, dict[s
             writer.writerows(correction_rows)
 
         summary = {
-            "source": str(source_dir),
+            "source": portable_path(source_dir),
             "format": "YOLO object detection (class_id x_center y_center width height; normalized 0-1)",
             "coordinate_conversion": "PASCAL VOC 1-based inclusive to zero-based pixel edges, clipped to image bounds",
             "class_names": CLASS_NAMES,
@@ -243,7 +251,7 @@ def export_dataset(source_dir: Path, output_dir: Path, results: dict[str, dict[s
         if output_dir.exists():
             backup_dir = output_dir.with_name(f".{output_dir.name}.backup")
             if backup_dir.exists():
-                raise FileExistsError(f"Backup path already exists: {backup_dir}")
+                raise FileExistsError(f"Backup directory already exists: {backup_dir.name}")
             output_dir.rename(backup_dir)
         try:
             temp_dir.rename(output_dir)
@@ -279,11 +287,11 @@ def main() -> None:
     source_dir = args.source_dir.expanduser().resolve()
     output_dir = args.output_dir.expanduser().resolve()
     if not source_dir.is_dir():
-        raise SystemExit(f"Dataset source directory does not exist: {source_dir}")
+        raise SystemExit(f"Dataset source directory does not exist: {portable_path(source_dir)}")
     if source_dir == output_dir or source_dir in output_dir.parents or output_dir in source_dir.parents:
         raise SystemExit("Source and output directories must be separate, non-nested directories.")
     if output_dir.exists() and not args.overwrite:
-        raise SystemExit(f"Output already exists: {output_dir}. Choose another --output-dir or pass --overwrite.")
+        raise SystemExit(f"Output already exists: {portable_path(output_dir)}. Choose another --output-dir or pass --overwrite.")
 
     results = {split: scan_split(source_dir, split) for split in SPLITS}
     found_classes = {name for result in results.values() for name in result["class_instances"]}
@@ -296,9 +304,9 @@ def main() -> None:
     total_images = sum(result["images"] for result in results.values())
     total_objects = sum(result["objects"] for result in results.values())
     total_clipped = sum(len(result["corrections"]) for result in results.values())
-    print(f"YOLO dataset written to: {output_dir}")
+    print(f"YOLO dataset written to: {portable_path(output_dir)}")
     print(f"Images: {total_images}; objects: {total_objects}; clipped boxes: {total_clipped}")
-    print(f"Class mapping and split counts: {output_dir / 'conversion_report.json'}")
+    print(f"Class mapping and split counts: {portable_path(output_dir / 'conversion_report.json')}")
 
 
 if __name__ == "__main__":

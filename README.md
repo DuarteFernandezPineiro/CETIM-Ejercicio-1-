@@ -28,3 +28,13 @@ python scripts/prepare_yolo_dataset.py
 ```
 
 El script crea `artifacts/yolo_dataset/` con `images/{train,val,test}`, `labels/{train,val,test}`, `data.yaml`, la lista de clases y un informe de conversión. Convierte las coordenadas VOC a YOLO normalizado y recorta las cajas al tamaño de imagen cuando salen de sus límites. Los originales no se modifican. Para regenerar una salida existente, añade `--overwrite`.
+
+## Validación de la conversión
+
+Después de preparar los datos, valida los pares imagen-etiqueta, los IDs de clase, las cajas normalizadas y los recuentos por división, y genera una hoja de revisión visual:
+
+```bash
+python scripts/validate_yolo_dataset.py
+```
+
+El informe estructural se guarda en `artifacts/yolo_dataset/validation_report.json` y la vista previa de las cajas convertidas en `artifacts/yolo_dataset/annotation_preview.jpg`. Las cajas corregidas se resaltan en rojo en la vista previa. El script devuelve un código de error si detecta inconsistencias.

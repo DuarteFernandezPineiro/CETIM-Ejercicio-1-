@@ -18,3 +18,13 @@ python scripts/evaluate_dataset.py
 El informe se guarda en `artifacts/dataset_audit/` e incluye inventario de imágenes y anotaciones, distribución de objetos por clase y división, densidad de objetos por imagen, geometría de cajas, ejemplos visuales y avisos de calidad. El script también detecta archivos sin pareja, XML inválidos, dimensiones incoherentes, cajas fuera de la imagen y duplicados exactos entre divisiones.
 
 La división `validation` se usa para elegir el modelo; `testing` se reserva para la evaluación final. Para detección, conviene informar mAP@0.5, mAP@0.5:0.95 y métricas por clase, además de revisar las imágenes anotadas.
+
+## Conversión a YOLO
+
+Para convertir las anotaciones PASCAL VOC a etiquetas YOLO de detección:
+
+```bash
+python scripts/prepare_yolo_dataset.py
+```
+
+El script crea `artifacts/yolo_dataset/` con `images/{train,val,test}`, `labels/{train,val,test}`, `data.yaml`, la lista de clases y un informe de conversión. Convierte las coordenadas VOC a YOLO normalizado y recorta las cajas al tamaño de imagen cuando salen de sus límites. Los originales no se modifican. Para regenerar una salida existente, añade `--overwrite`.

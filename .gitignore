@@ -1,4 +1,5 @@
 /Construction and Demolition Waste Object Detection Dataset  (CODD)/
+/artifacts/yolo_dataset/
 # ==============================
 # Datasets
 # ==============================
@@ -12,6 +13,13 @@
 /artifacts/dataset_audit/bbox_inventory.csv
 /artifacts/dataset_audit/image_inventory.csv
 
+# Generated YOLO dataset
+/artifacts/yolo_dataset/images/
+/artifacts/yolo_dataset/labels/
+
+# Temporary exports and backups
+/artifacts/.yolo_dataset.tmp-*/
+/artifacts/.yolo_dataset.backup/
 # ==============================
 # Python
 # ==============================

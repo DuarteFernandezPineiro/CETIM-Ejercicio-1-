@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-only
 """Fine-tune and compare COCO-pretrained Ultralytics detectors on CODD."""
 
 from __future__ import annotations
@@ -195,6 +196,15 @@ def training_history(results_csv: Path, trainer: Any) -> dict[str, Any]:
         with results_csv.open(newline="", encoding="utf-8") as stream:
             rows = [{(key or "").strip(): (value or "").strip() for key, value in row.items()} for row in csv.DictReader(stream)]
 
+    first_epoch = None
+    for row in rows:
+        try:
+            first_epoch = int(float(row.get("epoch", "nan")))
+            break
+        except (TypeError, ValueError):
+            continue
+    zero_based_epochs = first_epoch == 0
+
     best_score = float("-inf")
     best_epoch: int | None = None
     for row in rows:
@@ -205,7 +215,7 @@ def training_history(results_csv: Path, trainer: Any) -> dict[str, Any]:
             continue
         if score == score and score > best_score:  # Ignore NaN and retain the first tie.
             best_score = score
-            best_epoch = epoch_number + 1
+            best_epoch = epoch_number + 1 if zero_based_epochs else epoch_number
 
     last_epoch = getattr(trainer, "epoch", None)
     epochs_executed = len(rows) or (int(last_epoch) + 1 if last_epoch is not None else None)
@@ -339,7 +349,6 @@ def run_model(
         "fine_tuning": {
             "pretrained": True,
             "frozen_layers": args.freeze,
-            "all_layers_trainable": args.freeze == 0,
         },
         "dataset": dataset_dir_name(dataset_validation),
         "dataset_images": dataset_validation["total_images"],

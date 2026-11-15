@@ -1,100 +1,94 @@
-# CETIM - Ejercicio 1
+# CETIM · Ejercicio 1 — detección de residuos de construcción y demolición
 
-## Construction and Demolition Waste Detection
+Este prototipo localiza diez clases de residuos en imágenes RGB mediante cajas delimitadoras. El objetivo es estudiar qué materiales podría identificar un detector ligero para asistir a su separación en una cinta. El problema se relaciona con Smart2ReDuCe, donde CETIM investiga visión artificial y fotónica para mejorar la separación de residuos de construcción y demolición. [Proyecto Smart2ReDuCe de CETIM](https://cetim.es/cetim-desarrolla-tecnologias-4-0-para-mejorar-el-proceso-de-reciclaje-de-los-residuos-de-construccion-y-demolicion/).
 
-Proyecto de visión artificial para la detección
-y clasificación de residuos de construcción
-mediante Deep Learning.
+## Decisiones y resultado
 
-## Entorno de entrenamiento
+- **Datos.** CODD v3 ofrece cajas para diez categorías de residuos de construcción y demolición y proporciona particiones para entrenamiento, validación y test. SortWaste también ofrece detección en escenas industriales densas, pero su taxonomía, centrada en residuos municipales y envases, encaja peor con los materiales de construcción de este ejercicio. El tamaño de CODD permitió auditar las etiquetas y entrenar dos modelos ligeros con el equipo disponible. [CODD v3](https://data.mendeley.com/datasets/wds85kt64j/3) · [SortWaste](https://arxiv.org/abs/2601.02299).
+- **Modelo y métrica.** Se compararon YOLOv8n y YOLO11n preentrenados en COCO, a 640 px y con una semilla. Las cajas bastan para estudiar presencia y localización. El tamaño nano permite entrenar con 4 GiB de VRAM. Se escogió YOLOv8n por mAP50–95 en validación (**0,7209 frente a 0,6958**), que combina la curva precisión–recall por clase con varios requisitos de ajuste de las cajas. El recall y la precisión al punto operativo muestran cuántos objetos se omiten y cuántas predicciones son correctas al usar un umbral concreto.
+- **Resultado y alcance.** En la partición test de CODD, YOLOv8n obtuvo **0,7442 mAP50–95**. En el diagnóstico histórico a confianza 0,50, NMS IoU 0,50 e IoU de emparejamiento 0,50, recuperó **85/256 `pipes`, 98/266 `plastic` y 144/270 `stone`**. El recall bajó del **84,1 %** en escenas de uno a cinco objetos al **66,5 %** en escenas de diez o más. Se observaron escenas visualmente muy similares entre particiones, de modo que estos resultados describen el rendimiento en el test de CODD y su alcance depende de cómo se separaron las capturas.
 
-Se recomienda Python 3.11. Instala una sola variante de PyTorch en el entorno
-virtual: CPU o GPU NVIDIA. Los archivos fijan versiones compatibles de PyTorch
-y TorchVision; `requirements.txt` mantiene las dependencias comunes y la versión
-de Ultralytics.
+[Auditoría de datos y dependencia entre particiones](docs/01_dataset_analysis.md) · [Resultados, evaluador y trabajo futuro](docs/04_results_and_conclusions.md) · [Ejemplos de inferencia](artifacts/prediction_examples/README.md).
+
+## Instalación
+
+Usa Python 3.11. Desde la raíz del repositorio, en PowerShell:
 
 ```powershell
-py -3.11 -m venv .venv
+python --version
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-```
-
-Para entrenamiento con GPU NVIDIA (CUDA 12.8, Windows/Python 3.11):
-
-```powershell
-python -m pip install -r requirements-gpu-cu128.txt
-python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'GPU no disponible')"
-```
-
-Para CPU:
-
-```powershell
 python -m pip install -r requirements-cpu.txt
+$device = "cpu"
 ```
 
-La build CUDA incluye el runtime de CUDA de PyTorch; no hace falta instalar el
-CUDA Toolkit por separado. Sí hace falta un driver NVIDIA compatible. Para
-revisar el driver y la memoria de la GPU, ejecuta `nvidia-smi`.
+Con GPU NVIDIA y un controlador compatible con CUDA 12.8, usa `requirements-gpu-cu128.txt` en lugar del perfil CPU y asigna `$device = "0"`. Las mediciones publicadas usaron este perfil con una GTX 1650 de 4 GiB. En Linux x86-64, crea el entorno con `python3.11 -m venv .venv`, actívalo con `source .venv/bin/activate` y usa `device=cpu` o `device=0`. Los comandos de Python son los mismos.
 
-## Auditoría inicial del dataset
+## Revisión rápida
 
-Antes de entrenar, se puede generar un informe exploratorio del dataset CODD:
+Estas operaciones usan los registros incluidos y funcionan sin CODD ni pesos:
 
-```bash
-python -m pip install -r requirements.txt
-python scripts/evaluate_dataset.py
+```powershell
+python -m unittest discover -s tests -v
+python scripts/compare_experiments.py --runs-dir artifacts/experiment_comparison/training_logs --output-dir tmp/comparacion
 ```
 
-El informe se guarda en `artifacts/dataset_audit/` e incluye inventario de imágenes y anotaciones, distribución de objetos por clase y división, densidad de objetos por imagen, geometría de cajas, ejemplos visuales y avisos de calidad. El script también detecta archivos sin pareja, XML inválidos, dimensiones incoherentes, cajas fuera de la imagen y duplicados exactos entre divisiones.
+La comparación regenera tablas y curvas a partir de los CSV de épocas, la configuración y los resúmenes de los dos entrenamientos. El aviso de que falta `best.pt` es esperado al usar esos registros exportados. Para inspeccionar una predicción sin ejecutar el modelo, consulta la [escena de validación 2966](artifacts/prediction_examples/annotated/2966.jpg) junto con [sus detecciones en JSON](artifacts/prediction_examples/predictions.json).
 
-La división `validation` se usa para elegir el modelo; `testing` se reserva para la evaluación final. Para detección, conviene informar mAP@0.5, mAP@0.5:0.95 y métricas por clase, además de revisar las imágenes anotadas.
+## Reproducir el experimento
 
-## Conversión a YOLO
+### 1. Auditar y preparar CODD
 
-Para convertir las anotaciones PASCAL VOC a etiquetas YOLO de detección:
+Descarga [CODD v3](https://data.mendeley.com/datasets/wds85kt64j/3) y coloca la carpeta descomprimida en la raíz del repositorio. El nombre de carpeta por defecto contiene **dos espacios** antes de `(CODD)`.
 
-```bash
+```text
+Construction and Demolition Waste Object Detection Dataset  (CODD)/
+├── training/    # JPG y XML juntos
+├── validation/
+└── testing/
+```
+
+```powershell
+python scripts/evaluate_dataset.py --output-dir tmp/auditoria
 python scripts/prepare_yolo_dataset.py
-```
-
-El script crea `artifacts/yolo_dataset/` con `images/{train,val,test}`, `labels/{train,val,test}`, `data.yaml`, la lista de clases y un informe de conversión. Convierte las coordenadas VOC a YOLO normalizado y recorta las cajas al tamaño de imagen cuando salen de sus límites. Los originales no se modifican. Para regenerar una salida existente, añade `--overwrite`.
-
-## Validación de la conversión
-
-Después de preparar los datos, valida los pares imagen-etiqueta, los IDs de clase, las cajas normalizadas y los recuentos por división, y genera una hoja de revisión visual:
-
-```bash
 python scripts/validate_yolo_dataset.py
 ```
 
-El informe estructural se guarda en `artifacts/yolo_dataset/validation_report.json` y la vista previa de las cajas convertidas en `artifacts/yolo_dataset/annotation_preview.jpg`. Las cajas corregidas se resaltan en rojo en la vista previa. El script devuelve un código de error si detecta inconsistencias.
+Compara el nuevo `tmp/auditoria/summary.json` con el [resumen versionado](artifacts/dataset_audit/summary.json). Los SHA-256 por partición permiten detectar cambios en nombres, imágenes o XML. La copia auditada contiene **1.984/570/573 imágenes** y **16.519 objetos** en total. La diferencia con la cifra publicada queda documentada en la auditoría. La conversión crea `artifacts/yolo_dataset/`, registra 42 cajas corregidas y conserva las imágenes y los XML de origen. Si ya existe esa salida, usa `--overwrite` al regenerarla y vuelve a ejecutar el validador. Si el origen tiene otro nombre, pasa `--dataset-dir` al auditor y `--source-dir` al conversor.
 
-## Entrenamiento y comparación de modelos
+### 2. Entrenar
 
-Con el dataset convertido y validado, se pueden ajustar y comparar modelos Ultralytics con la misma configuración:
-
-```bash
-python scripts/train_yolo.py --models yolov8s yolo11s yolo26s --imgsz 640 --batch 2 --seed 42
+```powershell
+python scripts/train_yolo.py --models yolov8n yolo11n --epochs 60 --imgsz 640 --batch 2 --patience 10 --workers 4 --seed 42 --device $device --project runs/reproduccion
+python scripts/compare_experiments.py --runs-dir runs/reproduccion --output-dir tmp/comparacion-reentrenada
 ```
 
-Se admiten los tamaños `n`, `s`, `m`, `l` y `x` de YOLOv8, YOLO11 y YOLO26. Por defecto se entrena solo `yolov8n`. Ultralytics obtiene los checkpoints oficiales `*.pt` preentrenados en COCO; no se usan los pesos incluidos en la carpeta del dataset. El script usa `pretrained=True` y `freeze=0` por defecto, por lo que hace fine-tuning de toda la red. `--freeze N` permite congelar las primeras `N` capas si se quiere probar esa alternativa.
+Usa `--models yolov8n` para entrenar solo el detector seleccionado. Ultralytics descarga las inicializaciones COCO si hacen falta. Las ejecuciones publicadas duraron aproximadamente 91 minutos para YOLOv8n y 74 para YOLO11n en la GTX 1650. En CPU el entrenamiento puede tardar más y las métricas y los tiempos pueden variar. Si repites la orden en el mismo destino, usa la ruta de la nueva ejecución indicada por Ultralytics en los pasos siguientes.
 
-Todos los modelos solicitados reciben los mismos parámetros por defecto: 100 épocas, tamaño 640, batch 16, semilla 42, AdamW, `lr0=0.001`, `weight_decay=0.0005`, warmup de 3 épocas y scheduler coseno. En la GTX 1650 de 4 GiB, sobrescribe el batch por 2 a 640 o 1 a 960 para los modelos `s`. Se puede configurar el optimizador (`SGD`, `MuSGD`, `Adam`, `Adamax`, `AdamW`, `NAdam`, `RAdam`, `RMSProp` o `auto`), `--lr0`, `--lrf`, `--weight-decay`, `--warmup-epochs` y `--scheduler {linear,cosine}`. Los parámetros de augmentación configurables son `--hsv-h`, `--hsv-s`, `--hsv-v`, `--degrees`, `--translate`, `--scale`, `--shear`, `--perspective`, `--flipud`, `--fliplr`, `--mosaic` y `--mixup`. AMP se controla con `--amp`/`--no-amp` y las capas congeladas con `--freeze`.
+### 3. Evaluar
 
-Si se elige `--batch -1` para que Ultralytics ajuste automáticamente el batch de entrenamiento, la validación independiente usa un batch positivo (1 por defecto). Se puede cambiar con `--val-batch`.
+```powershell
+$checkpoint = "runs/reproduccion/codd-yolov8n-img640-seed42/weights/best.pt"
+python scripts/evaluate_model.py --checkpoint $checkpoint --split val --imgsz 640 --batch 2 --conf 0.50 --nms-iou 0.50 --match-iou 0.50 --device $device --output-dir tmp/validacion
+python scripts/analyze_validation_followup.py --checkpoint $checkpoint --imgsz 640 --batch 2 --device $device --output-dir tmp/sensibilidad
+```
 
-Cada experimento se nombra con arquitectura, resolución y semilla, por ejemplo `codd-yolo11s-img640-seed42`. Durante el entrenamiento se usa `train` para ajustar pesos y `val` para seleccionar/comparar modelos; el script nunca evalúa `test`. `requirements.txt` fija `ultralytics==8.4.210` y el script comprueba esa versión antes de entrenar. La primera ejecución necesita Internet para descargar los checkpoints COCO si aún no están en caché.
+Para reproducir la evaluación final de un modelo y configuración ya fijados, ejecuta el primer comando con `--split test --confirm-test --output-dir tmp/test`. El comparador y el análisis de sensibilidad corresponden a validación. Las cifras publicadas usan el checkpoint histórico. El informe técnico distingue el protocolo nativo de AP del diagnóstico a umbral fijo y documenta el cambio en el tamaño efectivo del lote diagnóstico.
 
-Los resultados se guardan en `runs/detect/`: checkpoints `best.pt` y `last.pt`, gráficas de Ultralytics, `experiment_summary.json` por modelo y `model_comparison.json`. El resumen registra configuración efectiva, versión de software, hardware, tiempo y épocas ejecutadas, mejor época, métricas globales y por clase, además de velocidad de validación e inferencia. `--device 0` selecciona la primera GPU y `--device cpu` fuerza CPU. Elige la variante de requirements adecuada al hardware antes de entrenar.
+### 4. Ejecutar inferencia
 
-En el equipo donde se preparó este entorno hay una GeForce GTX 1650 con 4 GiB
-de VRAM.
-Para los modelos `s` y AMP activado, empieza con `--batch 2` a 640 píxeles y
-`--batch 1` a 960. Son valores conservadores: el uso real depende del espacio
-libre de VRAM, del tamaño del conjunto y de las transformaciones. Si aparece un
-error de memoria, reduce el batch o la resolución. Evita `--batch -1` en esta
-GPU porque la memoria disponible limita la estimación automática.
+```powershell
+python scripts/predict.py --source artifacts/yolo_dataset/images/val/2966.jpg --checkpoint $checkpoint --imgsz 640 --conf 0.50 --iou 0.50 --device cpu --output-dir artifacts/predictions/demo
+```
 
-La validación durante entrenamiento y la independiente utilizan exclusivamente `val`. Ejecuta una evaluación final sobre `test` solo después de seleccionar el modelo y cerrar la configuración.
+También puedes pasar una imagen propia o un directorio plano de imágenes. Usa un directorio de salida nuevo para cada prueba. El comando escribe las imágenes anotadas y un JSON con clase, confianza y caja XYXY en píxeles. Si dispones de un checkpoint CODD compatible, puedes empezar aquí con una imagen propia.
 
-Los modelos Ultralytics se distribuyen bajo licencia AGPL-3.0 (con opción Enterprise); revisa sus condiciones antes de reutilizarlos o distribuirlos: [licencia y documentación de Ultralytics](https://docs.ultralytics.com/).
+## Licencias y atribución
+
+El código usa [GNU AGPL-3.0](LICENSE). El proyecto utiliza Ultralytics 8.4.210. Los checkpoints de entrenamiento quedan fuera del repositorio. [Código de Ultralytics](https://github.com/ultralytics/ultralytics) · [Condiciones de Ultralytics para código y pesos](https://www.ultralytics.com/license).
+
+Los inventarios de cajas y los ejemplos visuales derivan de *Construction and Demolition Waste Object Detection Dataset (CODD)*, versión 3, de Demetris Demetriou, Pavlos Mavromatidis, Michael Petrou y Demetris Nicolaides. Se han extraído metadatos, preparado montajes y superpuesto anotaciones o predicciones según el artefacto. El corpus completo se descarga de la fuente. [Dataset y DOI](https://doi.org/10.17632/wds85kt64j.3) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) · [Artículo original](https://doi.org/10.1016/j.wasman.2024.02.017).
+
+## Uso de IA
+
+Usé ChatGPT y Codex para explorar alternativas, apoyar la implementación y revisión de scripts, contrastar interpretaciones y revisar la documentación. También los utilicé en la auditoría final del evaluador y de la reproducibilidad. Me encargué de organizar y planificar las fases del proyecto y de gestionar el historial en Git. Formulé interpretaciones a partir de los resultados y después las contrasté con ChatGPT.

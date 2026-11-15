@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-only
 """Audit the CODD image-detection dataset and write a compact EDA report."""
 
 from __future__ import annotations
@@ -41,7 +42,7 @@ def write_csv(path: Path, rows: list[dict[str, Any]], fields: list[str]) -> None
         writer.writerows(rows)
 
 
-def image_sha256(path: Path) -> str:
+def file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
@@ -72,12 +73,12 @@ def inspect_split(split: str, directory: Path) -> dict[str, Any]:
         total_image_bytes += image_path.stat().st_size
         width = height = 0
         try:
+            image_hashes[image_path.name] = file_sha256(image_path)
             with Image.open(image_path) as image:
                 image.verify()
             with Image.open(image_path) as image:
                 width, height = image.size
             dimensions[f"{width}x{height}"] += 1
-            image_hashes[image_path.name] = image_sha256(image_path)
         except (OSError, UnidentifiedImageError) as exc:
             issues.append({"split": split, "file": image_path.name, "issue": f"Unreadable image: {exc}"})
 
@@ -177,6 +178,17 @@ def inspect_split(split: str, directory: Path) -> dict[str, Any]:
     for orphan in orphan_xml:
         issues.append({"split": split, "file": f"{orphan}.xml", "issue": "XML has no matching image"})
 
+    file_hashes = dict(image_hashes)
+    for annotation in annotations:
+        try:
+            file_hashes[annotation.name] = file_sha256(annotation)
+        except OSError:
+            issues.append({"split": split, "file": annotation.name, "issue": "Could not read XML for split fingerprint"})
+    split_sha256 = None
+    if len(file_hashes) == len(images) + len(annotations):
+        manifest = "".join(f"{name}\0{digest}\n" for name, digest in sorted(file_hashes.items()))
+        split_sha256 = hashlib.sha256(manifest.encode("utf-8")).hexdigest()
+
     instance_total = sum(class_instances.values())
     return {
         "split": split,
@@ -204,6 +216,7 @@ def inspect_split(split: str, directory: Path) -> dict[str, Any]:
             "image_dimensions": dict(dimensions),
             "image_bytes": total_image_bytes,
             "classes": len(class_instances),
+            "sha256": split_sha256,
         },
     }
 
@@ -347,7 +360,10 @@ def main() -> None:
         for filename, digest in result["image_hashes"].items():
             duplicate_hashes[digest].append(f"{split}/{filename}")
             stem_splits[Path(filename).stem].add(split)
-    exact_duplicate_groups = [paths for paths in duplicate_hashes.values() if len(paths) > 1]
+    exact_duplicate_groups = [
+        paths for paths in duplicate_hashes.values()
+        if len({path.split("/", 1)[0] for path in paths}) > 1
+    ]
     repeated_stems = {stem: sorted(splits) for stem, splits in stem_splits.items() if len(splits) > 1}
 
     bbox_outside = sum(bool(box["bbox_out_of_bounds"]) for box in box_rows)
@@ -417,7 +433,7 @@ def main() -> None:
         "",
         "## Evaluation guidance",
         "",
-        "For object detection, report mAP@0.5 and mAP@0.5:0.95 plus per-class precision/recall. Avoid accuracy as the headline metric. Keep `testing` untouched until the final evaluation; use `validation` for model selection.",
+        "Report mAP@0.5:0.95 and per-class precision/recall. Use validation for model selection and reserve predictions on testing for the final evaluation. Exact hashes do not establish that scenes are independent.",
         "",
     ]
     (output_dir / "report.md").write_text("\n".join(lines), encoding="utf-8")

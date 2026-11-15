@@ -44,4 +44,4 @@ See `data_issues.csv` for per-file issues. **42 / 16,519 boxes (0.25%) extend be
 
 ## Evaluation guidance
 
-For object detection, report mAP@0.5 and mAP@0.5:0.95 plus per-class precision/recall. Avoid accuracy as the headline metric. Keep `testing` untouched until the final evaluation; use `validation` for model selection.
+Report mAP@0.5:0.95 and per-class precision/recall. Use validation for model selection and reserve predictions on testing for the final evaluation. Exact hashes do not establish that scenes are independent.

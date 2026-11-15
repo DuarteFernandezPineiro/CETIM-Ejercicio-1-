@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-only
 """Evaluate a trained Ultralytics detector on CODD without leaking the test split."""
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ import platform
 import re
 import time
 from collections import Counter, defaultdict
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -31,6 +33,38 @@ DEFAULT_OUTPUT = PROJECT_ROOT / "artifacts" / "model_evaluation"
 PINNED_ULTRALYTICS_VERSION = "8.4.210"
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 LOCALIZATION_IOU = 0.1
+
+
+class _SerialThreadPool:
+    """Small synchronous fallback for Ultralytics' initial label-cache scan."""
+
+    def __init__(self, processes: int | None = None) -> None:
+        self.processes = processes
+
+    def __enter__(self) -> "_SerialThreadPool":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        return None
+
+    def imap(self, func: Any, iterable: Iterable[Any]) -> Iterable[Any]:
+        return map(func, iterable)
+
+
+@contextmanager
+def _serial_ultralytics_label_scan() -> Iterable[None]:
+    """Avoid multiprocessing-pipe permissions during a first cache scan on Windows."""
+    try:
+        import ultralytics.data.dataset as dataset_module
+    except ImportError:
+        yield
+        return
+    original_pool = dataset_module.ThreadPool
+    dataset_module.ThreadPool = _SerialThreadPool
+    try:
+        yield
+    finally:
+        dataset_module.ThreadPool = original_pool
 
 
 def json_safe(value: Any) -> Any:
@@ -297,6 +331,24 @@ def _read_yolo_labels(label_path: Path, width: int, height: int) -> tuple[np.nda
     return np.asarray(boxes, dtype=float).reshape((-1, 4)), np.asarray(classes, dtype=int)
 
 
+def _duplicate_label_rows(label_dir: Path, class_names: list[str]) -> list[dict[str, Any]]:
+    """Report exact duplicate YOLO rows without changing source labels."""
+    duplicates: list[dict[str, Any]] = []
+    for label_path in sorted(label_dir.glob("*.txt")):
+        rows = [line.strip() for line in label_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        counts = Counter(rows)
+        for row, count in counts.items():
+            if count <= 1:
+                continue
+            class_id = int(row.split()[0])
+            duplicates.append({
+                "image": f"{label_path.stem}.jpg",
+                "class": class_names[class_id] if 0 <= class_id < len(class_names) else str(class_id),
+                "duplicate_rows": count - 1,
+            })
+    return duplicates
+
+
 def _prediction_arrays(result: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Convert one Ultralytics Results object into CPU NumPy arrays."""
     boxes = getattr(result, "boxes", None)
@@ -307,6 +359,22 @@ def _prediction_arrays(result: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]
         boxes.cls.detach().cpu().numpy().astype(int),
         boxes.conf.detach().cpu().numpy().astype(float),
     )
+
+
+def predict_in_batches(
+    model: Any, image_paths: list[Path], batch: int, **options: Any
+) -> Iterable[Any]:
+    """Bound the number of images passed to Ultralytics' in-memory list loader."""
+    for offset in range(0, len(image_paths), batch):
+        paths = [str(path) for path in image_paths[offset:offset + batch]]
+        yield from model.predict(source=paths, stream=True, batch=batch, **options)
+
+
+def check_model_classes(model: Any, class_names: list[str]) -> None:
+    expected = dict(enumerate(class_names))
+    names = model.names
+    if names != expected and names != class_names:
+        raise SystemExit("Checkpoint class IDs or names do not match the dataset.")
 
 
 def _metrics_by_class(native_summary: list[dict[str, Any]], class_names: list[str]) -> dict[str, dict[str, Any]]:
@@ -626,7 +694,8 @@ def _write_report(path: Path, summary: dict[str, Any], output_dir: Path, class_n
         f"- Model: `{summary['model']}`",
         f"- Split: `{summary['split']}`",
         f"- Images: {summary['images_evaluated']}",
-        f"- Ground-truth objects: {summary['ground_truth_objects']}",
+        f"- Raw label objects: {summary['ground_truth_objects']}",
+        f"- Ground-truth objects scored by Ultralytics: {summary.get('native_ground_truth_objects', summary['ground_truth_objects'])}",
         f"- Checkpoint: `{summary['checkpoint']}`",
         f"- Input size / batch: {summary['imgsz']} / {summary['batch']}",
         "",
@@ -684,6 +753,23 @@ def _write_report(path: Path, summary: dict[str, Any], output_dir: Path, class_n
         "- One-to-one matching is confidence-ordered greedy matching. It is used only for thresholded diagnostics; AP remains Ultralytics-native.",
         "- Group recall is descriptive and depends on the specified confidence, IoU, and fixed bins; it is not a replacement for mAP.",
     ])
+    if summary.get("native_ground_truth_objects") != summary.get("ground_truth_objects"):
+        differing = [
+            f"{name}: native={values.get('instances')}, raw={values.get('raw_annotation_instances')}"
+            for name, values in summary["per_class_ap"].items()
+            if values.get("instances") != values.get("raw_annotation_instances")
+        ]
+        lines.extend([
+            f"- Label-cache discrepancy: Ultralytics scored {summary['native_ground_truth_objects']} objects after removing duplicate label rows; raw files contain {summary['ground_truth_objects']}.",
+            f"- Affected classes: {', '.join(differing)}.",
+            "",
+        ])
+    duplicate_labels = summary.get("label_integrity", {}).get("exact_duplicate_label_rows", [])
+    if duplicate_labels:
+        lines.extend([
+            f"- Exact duplicate YOLO label rows (reported, not edited): `{duplicate_labels}`",
+            "",
+        ])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -713,6 +799,7 @@ def evaluate(args: argparse.Namespace) -> Path:
     if not image_paths:
         raise SystemExit(f"No supported images found for split '{args.split}'.")
     output_dir = _output_path(args.output_dir.expanduser().resolve(), checkpoint, str(config.get("model", checkpoint.parent.parent.name)), imgsz, args.split)
+    duplicate_labels = _duplicate_label_rows(label_dir, class_names)
 
     try:
         installed = version("ultralytics")
@@ -727,6 +814,7 @@ def evaluate(args: argparse.Namespace) -> Path:
         raise SystemExit("PyTorch or Ultralytics could not be imported.") from exc
 
     model = YOLO(str(checkpoint))
+    check_model_classes(model, class_names)
     parameters = None
     try:
         parameters = sum(parameter.numel() for parameter in model.model.parameters())
@@ -734,21 +822,22 @@ def evaluate(args: argparse.Namespace) -> Path:
         pass
 
     validation_started = time.perf_counter()
-    native_metrics = model.val(
-        data=str(data_yaml),
-        split=args.split,
-        imgsz=imgsz,
-        batch=batch,
-        conf=0.001,
-        iou=0.7,
-        workers=0,
-        plots=True,
-        project=str(output_dir / "ultralytics"),
-        name="native_validation",
-        exist_ok=False,
-        device=args.device,
-        verbose=True,
-    )
+    with _serial_ultralytics_label_scan():
+        native_metrics = model.val(
+            data=str(data_yaml),
+            split=args.split,
+            imgsz=imgsz,
+            batch=batch,
+            conf=0.001,
+            iou=0.7,
+            workers=0,
+            plots=True,
+            project=str(output_dir / "ultralytics"),
+            name="native_validation",
+            exist_ok=False,
+            device=args.device,
+            verbose=True,
+        )
     validation_seconds = time.perf_counter() - validation_started
     native_speed = json_safe(getattr(native_metrics, "speed", {}) or {})
     native_summary = json_safe(native_metrics.summary())
@@ -757,9 +846,9 @@ def evaluate(args: argparse.Namespace) -> Path:
 
     image_records: list[dict[str, Any]] = []
     prediction_started = time.perf_counter()
-    prediction_stream = model.predict(
-        source=[str(path) for path in image_paths],
-        stream=True,
+    prediction_stream = predict_in_batches(
+        model,
+        image_paths,
         imgsz=imgsz,
         batch=batch,
         conf=args.conf,
@@ -804,7 +893,10 @@ def evaluate(args: argparse.Namespace) -> Path:
     per_class_ap = _metrics_by_class(native_summary, class_names)
     instances_by_class = Counter(name for record in image_records for name in (class_names[int(class_id)] for class_id in record["gt_classes"]))
     for name in class_names:
-        per_class_ap[name]["instances"] = int(instances_by_class[name])
+        per_class_ap[name]["raw_annotation_instances"] = int(instances_by_class[name])
+        if per_class_ap[name].get("instances") is None:
+            per_class_ap[name]["instances"] = int(instances_by_class[name])
+    native_ground_truth_objects = sum(int(values.get("instances") or 0) for values in per_class_ap.values())
 
     size_recall = _group_recall(image_records, "gt_size_bins", "gt_size_bins")
     density_recall = _group_recall(image_records, "density_bin")
@@ -843,6 +935,11 @@ def evaluate(args: argparse.Namespace) -> Path:
         "dataset": dataset_dir.name,
         "images_evaluated": len(image_records),
         "ground_truth_objects": sum(len(record["gt_classes"]) for record in image_records),
+        "native_ground_truth_objects": native_ground_truth_objects,
+        "label_integrity": {
+            "exact_duplicate_label_rows": duplicate_labels,
+            "source_annotations_modified": False,
+        },
         "imgsz": imgsz,
         "batch": batch,
         "thresholds": {"confidence": args.conf, "match_iou": args.match_iou, "nms_iou": args.nms_iou, "localization_error_iou_min": LOCALIZATION_IOU},
@@ -872,7 +969,7 @@ def evaluate(args: argparse.Namespace) -> Path:
         "native_validation_directory": native_save_dir.name,
         "method": {
             "ap": "Ultralytics native validation; not recalculated on diagnostic subsets.",
-            "matching": "Confidence-ordered greedy one-to-one matching; each prediction and ground-truth box is assigned at most once.",
+            "matching": "Confidence-ordered greedy one-to-one diagnostic matching. An error can claim a ground-truth box before a later correct prediction.",
             "size_bins": {"small": "area <= 1% of image", "medium": "1% < area <= 10%", "large": "area > 10%"},
             "density_bins": {"sparse_1_5": "1-5 GT objects/image", "medium_6_9": "6-9 GT objects/image", "dense_10_plus": "10 or more GT objects/image"},
             "overlap_bins": {"low_lt_0_1": "max pairwise GT IoU < 0.1", "moderate_0_1_0_5": "0.1 <= max IoU < 0.5", "high_ge_0_5": "max IoU >= 0.5"},

@@ -16,7 +16,8 @@
         "1920x1200": 1984
       },
       "image_bytes": 394693131,
-      "classes": 10
+      "classes": 10,
+      "sha256": "cd8b5d66f7ca3f4c98f490d2913fa93b62a4b24aac9a7521534c93b20a866818"
     },
     "validation": {
       "images": 570,
@@ -33,7 +34,8 @@
         "1920x1200": 570
       },
       "image_bytes": 111329677,
-      "classes": 10
+      "classes": 10,
+      "sha256": "f79e274462537fe3c17932007dae62159ad8dbdff348e4d6e3a7952cbfa101ec"
     },
     "testing": {
       "images": 573,
@@ -50,7 +52,8 @@
         "1920x1200": 573
       },
       "image_bytes": 112170193,
-      "classes": 10
+      "classes": 10,
+      "sha256": "23b0f6467943d5b539afe3d6fdf99dad001cc5bc718dcc92feae6ff2ab810e05"
     }
   },
   "total_images": 3127,

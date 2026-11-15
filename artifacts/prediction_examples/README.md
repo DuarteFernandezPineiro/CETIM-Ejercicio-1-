@@ -1,0 +1,7 @@
+# Inferencia de ejemplo (validation)
+
+Tres imágenes del split `val` se ejecutaron con el checkpoint YOLOv8n final y la configuración fijada antes de evaluar `test`: `imgsz=640`, confianza `0.50`, NMS IoU `0.50`, dispositivo CUDA 0. El checkpoint no se incluye en Git; véase la ruta reproducible y el protocolo en el README raíz.
+
+Las imágenes se eligieron para ilustrar una escena densa y ejemplos de las clases plastic, pipes y stone revisados en la fase de validation. No son una muestra aleatoria ni una estimación de rendimiento. Los overlays muestran predicciones del modelo, no las cajas ground truth. Los nombres de archivo y detecciones detalladas están en [`predictions.json`](predictions.json); los overlays están en [`annotated/`](annotated/).
+
+Fuente de las imágenes: Construction and Demolition Waste Object Detection Dataset (CODD), versión 3, split validation, de Demetris Demetriou, Pavlos Mavromatidis, Michael Petrou y Demetris Nicolaides; DOI [10.17632/wds85kt64j.3](https://doi.org/10.17632/wds85kt64j.3), licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Referencia del artículo: Demetriou et al., “CODD: A benchmark dataset for the automated sorting of construction and demolition waste”, *Waste Management* 178 (2024), DOI [10.1016/j.wasman.2024.02.017](https://doi.org/10.1016/j.wasman.2024.02.017). Las anotaciones originales no se modifican para generar estas imágenes: los overlays muestran predicciones del detector.

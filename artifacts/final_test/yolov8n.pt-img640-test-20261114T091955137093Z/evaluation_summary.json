@@ -1,0 +1,636 @@
+{
+  "status": "completed",
+  "model": "yolov8n.pt",
+  "checkpoint": "runs/detect/codd-yolov8n-img640-seed42/weights/best.pt",
+  "split": "test",
+  "dataset": "yolo_dataset",
+  "images_evaluated": 573,
+  "ground_truth_objects": 3224,
+  "imgsz": 640,
+  "batch": 2,
+  "thresholds": {
+    "confidence": 0.5,
+    "match_iou": 0.5,
+    "nms_iou": 0.5,
+    "localization_error_iou_min": 0.1
+  },
+  "global_metrics": {
+    "map50_95": 0.7441794866822836,
+    "map50": 0.8027755088071216
+  },
+  "operating_point_metrics": {
+    "precision": 0.9287429943955164,
+    "recall": 0.7196029776674938,
+    "f1": 0.8109052778748689
+  },
+  "per_class_ap": {
+    "brick": {
+      "images": 85,
+      "instances": 351,
+      "ap50": 0.98021,
+      "ap50_95": 0.93878,
+      "raw_annotation_instances": 351
+    },
+    "concrete": {
+      "images": 88,
+      "instances": 384,
+      "ap50": 0.95383,
+      "ap50_95": 0.91462,
+      "raw_annotation_instances": 384
+    },
+    "foam": {
+      "images": 46,
+      "instances": 300,
+      "ap50": 0.80465,
+      "ap50_95": 0.75422,
+      "raw_annotation_instances": 300
+    },
+    "general_w": {
+      "images": 108,
+      "instances": 266,
+      "ap50": 0.75595,
+      "ap50_95": 0.70133,
+      "raw_annotation_instances": 266
+    },
+    "gypsum_board": {
+      "images": 37,
+      "instances": 317,
+      "ap50": 0.88226,
+      "ap50_95": 0.82848,
+      "raw_annotation_instances": 317
+    },
+    "pipes": {
+      "images": 53,
+      "instances": 256,
+      "ap50": 0.68776,
+      "ap50_95": 0.5737,
+      "raw_annotation_instances": 256
+    },
+    "plastic": {
+      "images": 88,
+      "instances": 266,
+      "ap50": 0.52736,
+      "ap50_95": 0.45163,
+      "raw_annotation_instances": 266
+    },
+    "stone": {
+      "images": 47,
+      "instances": 270,
+      "ap50": 0.66562,
+      "ap50_95": 0.62456,
+      "raw_annotation_instances": 270
+    },
+    "tile": {
+      "images": 85,
+      "instances": 375,
+      "ap50": 0.92978,
+      "ap50_95": 0.89264,
+      "raw_annotation_instances": 375
+    },
+    "wood": {
+      "images": 195,
+      "instances": 439,
+      "ap50": 0.84033,
+      "ap50_95": 0.76183,
+      "raw_annotation_instances": 439
+    }
+  },
+  "per_class_operating_point": {
+    "brick": {
+      "tp": 330,
+      "fp": 7,
+      "fn": 21,
+      "precision": 0.9792284866468842,
+      "recall": 0.9401709401709402,
+      "f1": 0.9593023255813953
+    },
+    "concrete": {
+      "tp": 358,
+      "fp": 21,
+      "fn": 26,
+      "precision": 0.9445910290237467,
+      "recall": 0.9322916666666666,
+      "f1": 0.9384010484927915
+    },
+    "foam": {
+      "tp": 212,
+      "fp": 31,
+      "fn": 88,
+      "precision": 0.8724279835390947,
+      "recall": 0.7066666666666667,
+      "f1": 0.7808471454880295
+    },
+    "general_w": {
+      "tp": 172,
+      "fp": 27,
+      "fn": 94,
+      "precision": 0.864321608040201,
+      "recall": 0.6466165413533834,
+      "f1": 0.7397849462365591
+    },
+    "gypsum_board": {
+      "tp": 276,
+      "fp": 11,
+      "fn": 41,
+      "precision": 0.9616724738675958,
+      "recall": 0.8706624605678234,
+      "f1": 0.9139072847682119
+    },
+    "pipes": {
+      "tp": 85,
+      "fp": 8,
+      "fn": 171,
+      "precision": 0.9139784946236559,
+      "recall": 0.33203125,
+      "f1": 0.48710601719197705
+    },
+    "plastic": {
+      "tp": 98,
+      "fp": 40,
+      "fn": 168,
+      "precision": 0.7101449275362319,
+      "recall": 0.3684210526315789,
+      "f1": 0.4851485148514851
+    },
+    "stone": {
+      "tp": 144,
+      "fp": 1,
+      "fn": 126,
+      "precision": 0.993103448275862,
+      "recall": 0.5333333333333333,
+      "f1": 0.6939759036144578
+    },
+    "tile": {
+      "tp": 332,
+      "fp": 17,
+      "fn": 43,
+      "precision": 0.9512893982808023,
+      "recall": 0.8853333333333333,
+      "f1": 0.9171270718232043
+    },
+    "wood": {
+      "tp": 313,
+      "fp": 15,
+      "fn": 126,
+      "precision": 0.9542682926829268,
+      "recall": 0.7129840546697038,
+      "f1": 0.816166883963494
+    }
+  },
+  "best_class_by_ap50_95": {
+    "class": "brick",
+    "value": 0.93878
+  },
+  "worst_class_by_ap50_95": {
+    "class": "plastic",
+    "value": 0.45163
+  },
+  "error_counts": {
+    "classification_error": 144,
+    "false_negative": 745,
+    "false_positive": 19,
+    "localization_error": 15
+  },
+  "class_confusions": [
+    {
+      "ground_truth_class": "plastic",
+      "predicted_class": "general_w",
+      "count": 15
+    },
+    {
+      "ground_truth_class": "tile",
+      "predicted_class": "concrete",
+      "count": 12
+    },
+    {
+      "ground_truth_class": "foam",
+      "predicted_class": "gypsum_board",
+      "count": 11
+    },
+    {
+      "ground_truth_class": "brick",
+      "predicted_class": "tile",
+      "count": 9
+    },
+    {
+      "ground_truth_class": "gypsum_board",
+      "predicted_class": "foam",
+      "count": 9
+    },
+    {
+      "ground_truth_class": "foam",
+      "predicted_class": "plastic",
+      "count": 9
+    },
+    {
+      "ground_truth_class": "stone",
+      "predicted_class": "plastic",
+      "count": 8
+    },
+    {
+      "ground_truth_class": "plastic",
+      "predicted_class": "pipes",
+      "count": 8
+    },
+    {
+      "ground_truth_class": "wood",
+      "predicted_class": "foam",
+      "count": 7
+    },
+    {
+      "ground_truth_class": "general_w",
+      "predicted_class": "wood",
+      "count": 7
+    },
+    {
+      "ground_truth_class": "general_w",
+      "predicted_class": "plastic",
+      "count": 6
+    },
+    {
+      "ground_truth_class": "pipes",
+      "predicted_class": "plastic",
+      "count": 6
+    },
+    {
+      "ground_truth_class": "gypsum_board",
+      "predicted_class": "plastic",
+      "count": 4
+    },
+    {
+      "ground_truth_class": "plastic",
+      "predicted_class": "foam",
+      "count": 4
+    },
+    {
+      "ground_truth_class": "foam",
+      "predicted_class": "general_w",
+      "count": 4
+    },
+    {
+      "ground_truth_class": "plastic",
+      "predicted_class": "wood",
+      "count": 3
+    },
+    {
+      "ground_truth_class": "brick",
+      "predicted_class": "concrete",
+      "count": 2
+    },
+    {
+      "ground_truth_class": "tile",
+      "predicted_class": "brick",
+      "count": 2
+    },
+    {
+      "ground_truth_class": "general_w",
+      "predicted_class": "foam",
+      "count": 2
+    },
+    {
+      "ground_truth_class": "stone",
+      "predicted_class": "foam",
+      "count": 2
+    },
+    {
+      "ground_truth_class": "wood",
+      "predicted_class": "general_w",
+      "count": 2
+    },
+    {
+      "ground_truth_class": "concrete",
+      "predicted_class": "foam",
+      "count": 2
+    },
+    {
+      "ground_truth_class": "pipes",
+      "predicted_class": "general_w",
+      "count": 2
+    },
+    {
+      "ground_truth_class": "wood",
+      "predicted_class": "plastic",
+      "count": 2
+    },
+    {
+      "ground_truth_class": "concrete",
+      "predicted_class": "brick",
+      "count": 1
+    },
+    {
+      "ground_truth_class": "concrete",
+      "predicted_class": "wood",
+      "count": 1
+    },
+    {
+      "ground_truth_class": "pipes",
+      "predicted_class": "foam",
+      "count": 1
+    },
+    {
+      "ground_truth_class": "stone",
+      "predicted_class": "wood",
+      "count": 1
+    },
+    {
+      "ground_truth_class": "concrete",
+      "predicted_class": "tile",
+      "count": 1
+    },
+    {
+      "ground_truth_class": "general_w",
+      "predicted_class": "stone",
+      "count": 1
+    }
+  ],
+  "confusion_matrix_labels": [
+    "brick",
+    "concrete",
+    "foam",
+    "general_w",
+    "gypsum_board",
+    "pipes",
+    "plastic",
+    "stone",
+    "tile",
+    "wood",
+    "background"
+  ],
+  "confusion_matrix_absolute": [
+    [
+      330,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      9,
+      0,
+      10
+    ],
+    [
+      1,
+      358,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      21
+    ],
+    [
+      0,
+      0,
+      212,
+      4,
+      11,
+      0,
+      9,
+      0,
+      0,
+      0,
+      64
+    ],
+    [
+      0,
+      0,
+      2,
+      172,
+      0,
+      0,
+      6,
+      1,
+      0,
+      7,
+      78
+    ],
+    [
+      0,
+      0,
+      9,
+      0,
+      276,
+      0,
+      4,
+      0,
+      0,
+      0,
+      28
+    ],
+    [
+      0,
+      0,
+      1,
+      2,
+      0,
+      85,
+      6,
+      0,
+      0,
+      0,
+      162
+    ],
+    [
+      0,
+      0,
+      4,
+      15,
+      0,
+      8,
+      98,
+      0,
+      0,
+      3,
+      138
+    ],
+    [
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      8,
+      144,
+      0,
+      1,
+      115
+    ],
+    [
+      2,
+      12,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      332,
+      0,
+      29
+    ],
+    [
+      0,
+      0,
+      7,
+      2,
+      0,
+      0,
+      2,
+      0,
+      0,
+      313,
+      115
+    ],
+    [
+      4,
+      7,
+      4,
+      4,
+      0,
+      0,
+      5,
+      0,
+      7,
+      3,
+      0
+    ]
+  ],
+  "recall_by_size": {
+    "small": {
+      "ground_truth_objects": 1609,
+      "true_positives": 1157,
+      "recall": 0.7190801740211311
+    },
+    "medium": {
+      "ground_truth_objects": 1513,
+      "true_positives": 1081,
+      "recall": 0.7144745538664904
+    },
+    "large": {
+      "ground_truth_objects": 102,
+      "true_positives": 82,
+      "recall": 0.803921568627451
+    }
+  },
+  "recall_by_density": {
+    "sparse_1_5": {
+      "ground_truth_objects": 766,
+      "true_positives": 644,
+      "recall": 0.8407310704960835
+    },
+    "medium_6_9": {
+      "ground_truth_objects": 351,
+      "true_positives": 274,
+      "recall": 0.7806267806267806
+    },
+    "dense_10_plus": {
+      "ground_truth_objects": 2107,
+      "true_positives": 1402,
+      "recall": 0.6654010441385857
+    }
+  },
+  "recall_by_overlap": {
+    "low_lt_0_1": {
+      "ground_truth_objects": 2680,
+      "true_positives": 2223,
+      "recall": 0.8294776119402985
+    },
+    "moderate_0_1_0_5": {
+      "ground_truth_objects": 518,
+      "true_positives": 97,
+      "recall": 0.18725868725868725
+    },
+    "high_ge_0_5": {
+      "ground_truth_objects": 26,
+      "true_positives": 0,
+      "recall": 0.0
+    }
+  },
+  "examples": {
+    "correct": [
+      "visual_examples/correct_1.jpg",
+      "visual_examples/correct_103.jpg",
+      "visual_examples/correct_109.jpg",
+      "visual_examples/correct_113.jpg"
+    ],
+    "false_positive": [
+      "visual_examples/false_positive_109.jpg",
+      "visual_examples/false_positive_123.jpg",
+      "visual_examples/false_positive_129.jpg",
+      "visual_examples/false_positive_134.jpg"
+    ],
+    "false_negative": [
+      "visual_examples/false_negative_109.jpg",
+      "visual_examples/false_negative_12.jpg",
+      "visual_examples/false_negative_123.jpg",
+      "visual_examples/false_negative_129.jpg"
+    ]
+  },
+  "runtime": {
+    "validation_wall_seconds": 29.276,
+    "error_analysis_pass_seconds": 89.415,
+    "native_speed_ms_per_image": {
+      "preprocess": 0.6510439799386638,
+      "inference": 9.34977731285503,
+      "postprocess": 1.9738349027811413
+    },
+    "native_inference_images_per_second": 106.95441897050293
+  },
+  "parameter_count": 3140190,
+  "hardware": {
+    "system": "Windows",
+    "machine": "AMD64",
+    "processor": "Intel64 Family 6 Model 158 Stepping 10, GenuineIntel",
+    "logical_cpu_count": 8,
+    "requested_device": "0",
+    "cuda_available": true,
+    "accelerator_used": "cuda",
+    "cuda_devices": [
+      {
+        "name": "NVIDIA GeForce GTX 1650",
+        "compute_capability": [
+          7,
+          5
+        ],
+        "total_memory_gib": 4.0
+      }
+    ]
+  },
+  "software": {
+    "ultralytics": "8.4.210",
+    "torch": "2.10.0+cu128"
+  },
+  "native_validation_directory": "native_validation",
+  "method": {
+    "ap": "Ultralytics native validation; not recalculated on diagnostic subsets.",
+    "matching": "Confidence-ordered greedy one-to-one matching; each prediction and ground-truth box is assigned at most once.",
+    "size_bins": {
+      "small": "area <= 1% of image",
+      "medium": "1% < area <= 10%",
+      "large": "area > 10%"
+    },
+    "density_bins": {
+      "sparse_1_5": "1-5 GT objects/image",
+      "medium_6_9": "6-9 GT objects/image",
+      "dense_10_plus": "10 or more GT objects/image"
+    },
+    "overlap_bins": {
+      "low_lt_0_1": "max pairwise GT IoU < 0.1",
+      "moderate_0_1_0_5": "0.1 <= max IoU < 0.5",
+      "high_ge_0_5": "max IoU >= 0.5"
+    },
+    "bin_basis": "Predefined from docs/01_dataset_analysis.md and fixed independently of evaluation results."
+  },
+  "created_at_utc": "2026-11-14T09:22:01.174279+00:00",
+  "label_integrity": {
+    "exact_duplicate_label_rows": [],
+    "source_annotations_modified": false
+  },
+  "native_ground_truth_objects": 3224
+}

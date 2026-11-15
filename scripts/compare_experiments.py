@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-only
 """Aggregate and compare saved Ultralytics training experiments using validation metrics."""
 
 from __future__ import annotations
@@ -238,11 +239,21 @@ def _derive_record(experiment: Experiment) -> dict[str, Any]:
         run_directory = experiment.run_dir.resolve().relative_to(PROJECT_ROOT).as_posix()
     except ValueError:
         run_directory = experiment.run_dir.name
+    declared_splits = (
+        training.get("validation_split"), configuration.get("validation_split"), args.get("split")
+    )
+    validation_split = next((split for split in declared_splits if split is not None), None)
+    test_split_used = training.get("test_split_used", configuration.get("test_split_used"))
+    if "test" in declared_splits or configuration.get("test_split_used") is True:
+        test_split_used = True
+    outside_protocol = test_split_used is True or any(split not in (None, "val") for split in declared_splits)
+    if outside_protocol:
+        experiment.warnings.append("Excluded from comparison: the run declares a non-validation split or use of test")
     record = {
         "run_directory": run_directory,
         "run_name": experiment.run_dir.name,
         "status": experiment.status,
-        "eligible_for_ranking": experiment.status == "completed" and map50_95 is not None,
+        "eligible_for_ranking": experiment.status == "completed" and map50_95 is not None and not outside_protocol,
         "smoke_test": experiment.smoke_test,
         "model": model,
         "family": family,
@@ -277,8 +288,8 @@ def _derive_record(experiment: Experiment) -> dict[str, Any]:
         "software": software,
         "warnings": experiment.warnings,
         "configuration": _portable_mapping(configuration),
-        "validation_split": training.get("validation_split", configuration.get("validation_split")),
-        "test_split_used": training.get("test_split_used", configuration.get("test_split_used")),
+        "validation_split": validation_split,
+        "test_split_used": test_split_used,
     }
     experiment.record = record
     return record
@@ -334,7 +345,7 @@ def discover_experiments(runs_dir: Path) -> list[Experiment]:
 
 def _comparison_warnings(records: list[dict[str, Any]]) -> list[str]:
     """Warn about metadata differences that weaken a direct ranking."""
-    complete = [record for record in records if record["status"] == "completed" and not record["smoke_test"]]
+    complete = [record for record in records if record["eligible_for_ranking"] and not record["smoke_test"]]
     warnings: list[str] = []
     if len(complete) < 2:
         return warnings
@@ -352,11 +363,6 @@ def _comparison_warnings(records: list[dict[str, Any]]) -> list[str]:
         if len(values) > 1:
             detail = "; ".join(f"{value}: {', '.join(names)}" for value, names in values.items())
             warnings.append(f"Different {field_name} values may limit fairness: {detail}.")
-    for record in complete:
-        if record.get("validation_split") not in (None, "val"):
-            warnings.append(f"{record['run_name']} does not declare validation split 'val'.")
-        if record.get("test_split_used") is True:
-            warnings.append(f"{record['run_name']} reports test usage during training; exclude it from an unbiased comparison.")
     return warnings
 
 
@@ -656,7 +662,11 @@ def compare(runs_dir: Path, output_dir: Path, include_smoke_tests: bool = False)
 
     eligible = [record for record in records if record["eligible_for_ranking"] and (include_smoke_tests or not record["smoke_test"])]
     eligible.sort(key=lambda record: (record.get("map50_95") is not None, record.get("map50_95") or float("-inf")), reverse=True)
-    plots = [experiment for experiment in experiments if experiment.rows and (include_smoke_tests or not experiment.smoke_test)]
+    plots = [
+        experiment for experiment in experiments
+        if experiment.rows and experiment.record["eligible_for_ranking"]
+        and (include_smoke_tests or not experiment.smoke_test)
+    ]
     _save_comparison_csv(output_dir / "comparison.csv", records)
     payload = {
         "runs_directory": runs_dir.name,

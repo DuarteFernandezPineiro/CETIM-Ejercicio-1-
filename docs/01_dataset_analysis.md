@@ -1,16 +1,16 @@
-# Análisis del dataset CODD antes del entrenamiento
+# Auditoría del dataset CODD
 
 ## Objetivo y alcance
 
-Este análisis documenta si el dataset elegido parece adecuado para abordar un problema de visión artificial relacionado con la gestión de residuos de construcción y demolición. La pregunta en esta fase no es qué modelo obtiene mejores resultados, sino si los datos, sus etiquetas y sus particiones permiten plantear un experimento de detección defendible.
-
-La auditoría se generó con [`scripts/evaluate_dataset.py`](../scripts/evaluate_dataset.py). Los resultados están en [`artifacts/dataset_audit/`](../artifacts/dataset_audit/). El script inspecciona las imágenes y anotaciones XML de `training`, `validation` y `testing`; resume clases y cajas, busca problemas estructurales y genera figuras exploratorias. **No entrena ni evalúa un modelo.** Por tanto, este documento no presenta métricas de rendimiento predictivo.
+La auditoría inicial comprueba la estructura y la geometría de las etiquetas. Una revisión posterior explora la similitud entre capturas de distintas particiones. [Script de auditoría](../scripts/evaluate_dataset.py) · [Artefactos de auditoría](../artifacts/dataset_audit/) · [Evaluación del modelo](04_results_and_conclusions.md).
 
 ## Problema y estructura de los datos
 
 El proyecto propone detectar y clasificar residuos de construcción y demolición a partir de imágenes. Cada anotación XML contiene objetos con una clase y una caja delimitadora. El inventario también reconoce puntos de polígono para casi todos los objetos, por lo que el dataset podría permitir explorar segmentación si se valida esa geometría.
 
 El conjunto auditado contiene **3.127 imágenes de 1.920 × 1.200 píxeles y 16.519 objetos en 10 clases**. Todas las imágenes están emparejadas con un XML por nombre base. No hay imágenes sin objetos anotados según el inventario: el mínimo es un objeto por imagen.
+
+La ficha de CODD v3 describe residuos de una instalación de reciclaje de Chipre y declara 3.129 imágenes y 16.545 objetos. La causa de la diferencia de 2 imágenes y 26 objetos con la copia local sigue abierta. Repetir el experimento requiere comprobar qué copia se está usando. El resumen registra un SHA-256 por partición, calculado sobre los nombres ordenados y el hash de cada imagen y XML. El identificador permite verificar la copia efectiva, incluso si los recuentos coinciden. Reconciliarla con la publicación requiere un manifiesto equivalente de la fuente. [Ficha oficial](https://data.mendeley.com/datasets/wds85kt64j/3) · [Resumen y huellas de la copia auditada](../artifacts/dataset_audit/summary.json).
 
 | Partición | Imágenes | Objetos | Fracción de imágenes | Fracción de objetos | Media de objetos por imagen | Mediana | Rango |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -38,7 +38,7 @@ Las diez clases aparecen en las tres particiones. La distribución global no es 
 | `tile` | 1.344 | 346 | 375 | 2.065 | 12,5 % |
 | `wood` | 1.131 | 485 | 439 | 2.055 | 12,4 % |
 
-Hay diferencias de composición entre particiones. Por ejemplo, `wood` representa el 11,2 % de los objetos de entrenamiento, el 15,0 % de validación y el 13,6 % de test. `concrete` representa el 14,0 % en entrenamiento y el 11,2 % en validación. Esto no invalida las particiones, pero puede hacer que una métrica agregada o una comparación entre validación y test oculte comportamientos distintos por clase. Se deben reportar métricas por clase además del resultado global.
+Hay diferencias de composición entre particiones. Por ejemplo, `wood` representa el 11,2 % de los objetos de entrenamiento, el 15,0 % de validación y el 13,6 % de test. `concrete` representa el 14,0 % en entrenamiento y el 11,2 % en validación. Estas diferencias cambian el peso de cada clase en las métricas microagregadas. El desglose por clase también ayuda a interpretar el mAP, que promedia el AP de las clases con el mismo peso.
 
 El gráfico [`class_distribution.png`](../artifacts/dataset_audit/class_distribution.png) muestra las proporciones por partición. La tabla con recuentos de instancias e imágenes que contienen cada clase está en [`class_distribution.csv`](../artifacts/dataset_audit/class_distribution.csv). Como las imágenes pueden contener varios objetos y varias clases, el número de instancias no equivale al número de imágenes independientes.
 
@@ -56,29 +56,28 @@ El [`summary.json`](../artifacts/dataset_audit/summary.json), el [`report.md`](.
 
 - Las 3.127 imágenes tienen XML emparejado; no se registran XML huérfanos ni anotaciones ausentes.
 - Todas las imágenes legibles tienen dimensiones de 1.920 × 1.200 px y el script no detecta desacuerdos entre esas dimensiones y las declaradas en XML.
-- No se encontraron grupos de imágenes binariamente idénticas entre particiones. Sí hay 21 nombres base repetidos entre carpetas, pero eso no significa que las imágenes sean iguales: el script compara hashes exactos y encontró cero duplicados. Conviene mantener las particiones separadas y no combinar archivos por nombre base.
+- El SHA-256 encontró cero grupos de copias binarias entre particiones. Hay 21 nombres base reutilizados entre carpetas, por lo que cada imagen se identifica por partición y nombre.
 - Se registran **42 cajas fuera de los límites**, un 0,25 % de los objetos. Treinta y cuatro son de `wood`; 5 aparecen en entrenamiento, 10 en validación y 27 en test. Al revisar las coordenadas del inventario, las 42 exceden un borde en un solo píxel: `xmax = 1921` para un ancho de 1.920 o `ymax = 1201` para una altura de 1.200. Es una corrección localizada y reproducible.
 - El inventario reconoce puntos de polígono en 16.515 de 16.519 objetos. Esto acredita que hay datos de polígono detectables, pero la auditoría no comprueba que los vértices estén dentro de la imagen, que formen polígonos válidos o que coincidan con el objeto.
 
 El listado por archivo y objeto está en [`data_issues.csv`](../artifacts/dataset_audit/data_issues.csv); las coordenadas y atributos de las cajas están en [`bbox_inventory.csv`](../artifacts/dataset_audit/bbox_inventory.csv), y los metadatos por imagen, en [`image_inventory.csv`](../artifacts/dataset_audit/image_inventory.csv).
 
-## Idoneidad y límites de la evidencia
+## Dependencia visual entre particiones
 
-**Juicio provisional: adecuado para un primer experimento de detección supervisada y una prueba de concepto.** Hay miles de imágenes, etiquetas estructuradas, instancias de las diez clases en las tres particiones y no aparecen fallos estructurales generalizados. La calidad de las cajas observada es razonablemente buena, con una incidencia de borde pequeña que puede corregirse en la conversión.
+El hash exacto identifica archivos idénticos. En una revisión exploratoria posterior se compararon recortes centrales en escala de grises con un hash perceptual de diferencias y se inspeccionaron visualmente pares cercanos. Los siguientes casos tienen SHA-256 distintos. Sus nombres y cajas se pueden comprobar en los archivos originales y en el inventario. [Inventario de cajas](../artifacts/dataset_audit/bbox_inventory.csv).
 
-La idoneidad para un uso real todavía no está demostrada. Los artefactos no documentan la procedencia exacta del dataset, su licencia, el protocolo de captura, la independencia entre sesiones o centros, ni la política usada para decidir qué residuo pertenece a cada clase. La auditoría tampoco detecta imágenes casi duplicadas, evalúa la consistencia semántica de las etiquetas o establece si la distribución visual representa el entorno donde se usaría el modelo. Estos puntos condicionan cualquier afirmación de generalización y deben documentarse o verificarse antes de presentar el resultado como aplicable en operación.
+| Particiones | Imágenes | Observación |
+|---|---|---|
+| Entrenamiento y validación | `gen-844.jpg` / `gen-845.jpg` | Coinciden las posiciones de dos botellas y una caja de `general_w` tiene las mismas coordenadas en ambos XML. |
+| Entrenamiento y test | `gen-935.jpg` / `gen-936.jpg` | Dos objetos conservan posición y aspecto con cajas casi iguales. También aparecen cambios de contenido y más anotaciones en test. |
+| Validación y test | `gen-981.jpg` / `gen-982.jpg` | Las dos botellas conservan su orientación y sus cajas cambian muy poco. Se aprecia un cambio en un objeto pequeño de la escena. |
 
-La inspección del XML indica que los datos tienen estructura compatible con detección mediante cajas y que existe información de polígono para casi todos los objetos. Sin embargo, este análisis no evalúa máscaras ni permite concluir que la anotación de segmentación esté lista para entrenar un modelo de ese tipo.
+El fondo fijo puede acercar hashes perceptuales de escenas distintas. Los objetos y sus posiciones visibles en estos casos sostienen la hipótesis de capturas relacionadas o reutilización de objetos físicos. El cribado fue ilustrativo. Faltan identificadores de sesión, una estimación de la prevalencia y una medida del efecto sobre AP. La similitud puede hacer que parte del test se parezca al material visto al entrenar y reducir la dificultad de generalizar a escenas nuevas.
 
-## Decisiones técnicas antes del entrenamiento
+Se conservan los splits originales para documentar el experimento ejecutado. Resolver la dependencia requiere validar grupos de capturas con metadatos o revisión visual y rehacer el entrenamiento y la evaluación con grupos separados. Un test de otra sesión o instalación permitiría medir el escenario de generalización buscado. Cambiar ahora la partición sobre la que ya se conocen los resultados produciría un experimento nuevo y exigiría otro test reservado.
 
-1. **Preservar el original y preparar una conversión reproducible.** No modificar las imágenes ni XML de origen. Generar una representación de entrenamiento y guardar un registro de archivos transformados y correcciones.
-2. **Validar y limitar las cajas.** Al convertir las coordenadas XML al formato que requiera el framework, limitar las 42 coordenadas de borde al intervalo válido `[0, ancho] × [0, alto]`, confirmar que cada caja tenga anchura y altura positivas y conservar un recuento de las correcciones. La conversión debe respetar la convención de coordenadas del formato de origen y destino.
-3. **Transformar imagen y etiquetas de forma conjunta.** Aplicar el mismo redimensionado y, si procede, padding a las cajas. Dado que casi la mitad de las cajas ocupa menos del 1 % del fotograma, escoger un tamaño de entrada que no elimine demasiado detalle y revisar visualmente las etiquetas transformadas.
-4. **Mantener el protocolo de particiones.** Usar `training` para ajustar el modelo, `validation` para decisiones de configuración y umbrales, y `testing` una sola vez para la evaluación final. No aplicar augmentación a validación o test. Aplicar augmentación solo en entrenamiento y con transformaciones plausibles para el contexto visual.
-5. **Empezar con un baseline y evaluar por clase.** Reportar mAP@0.5, mAP@0.5:0.95, precisión y recall por clase, junto con predicciones revisadas visualmente. No decidir de antemano que hacen falta pesos o sobremuestreo: primero comprobar si las diferencias de distribución se traducen en errores sistemáticos por clase.
-6. **Revisar el origen y la diversidad.** Registrar fuente y licencia del dataset y, si se conoce, comprobar que las imágenes de particiones distintas no provengan de la misma secuencia o sesión de captura. La ausencia de duplicados exactos no descarta similitud visual ni dependencia entre escenas.
+## Decisiones que se derivan de los datos
 
-## Conclusión
-
-La auditoría respalda continuar con un baseline de detección después de una conversión controlada de las anotaciones y el tratamiento de las 42 cajas que rebasan el borde un píxel. No justifica todavía una afirmación de rendimiento real ni una selección de arquitectura. La siguiente evidencia necesaria será el resultado en validación y test, desglosado por clase y acompañado de ejemplos de aciertos y errores; también falta documentar la procedencia, licencia y representatividad del conjunto.
+- **Corregir geometría verificable.** El conversor transforma coordenadas VOC inclusivas a bordes de píxel y recorta las 42 cajas que exceden un borde. Conserva los originales y registra los cambios en `bbox_corrections.csv`. El validador comprueba las dimensiones, el mapeo de clases y las rutas de las particiones.
+- **Mantener detección por cajas como primera pregunta.** Hay etiquetas estructuradas para las diez clases y las cajas bastan para estudiar presencia y localización. La calidad semántica exige revisar si las cajas y clases describen bien los objetos. La auditoría detecta puntos de polígonos, cuya geometría y etiquetado requerirían una validación propia antes de explorar segmentación.
+- **Separar cobertura del corpus y transferencia.** Todas las imágenes contienen objetos anotados, así que el corpus no permite estimar falsas alarmas en una cinta vacía. También faltan escenas etiquetadas de otra instalación que midan cambios de cámara, iluminación o flujo de materiales. Se necesitarían capturas nuevas, con negativos y clases fuera de catálogo, para estas preguntas.

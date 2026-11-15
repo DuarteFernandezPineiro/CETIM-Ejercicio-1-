@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-only
 """Validate a YOLO export and create a deterministic annotation preview."""
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+import yaml
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 
@@ -81,15 +83,26 @@ def load_metadata(dataset_dir: Path, errors: list[str]) -> tuple[list[str], dict
 
     yaml_path = dataset_dir / "data.yaml"
     try:
-        yaml_text = yaml_path.read_text(encoding="utf-8")
-        for split in SPLITS:
-            if f"{split}: images/{split}" not in yaml_text:
-                errors.append(f"data.yaml is missing the expected {split} image path")
-        for class_id, class_name in enumerate(class_names):
-            if f"  {class_id}: {class_name}" not in yaml_text:
-                errors.append(f"data.yaml is missing class mapping {class_id}: {class_name}")
-    except OSError:
-        errors.append("Could not read data.yaml")
+        data = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError):
+        errors.append("Could not read or parse data.yaml")
+        return class_names, conversion
+
+    if not isinstance(data, dict):
+        errors.append("data.yaml must contain a mapping")
+        return class_names, conversion
+
+    # The export uses relative split paths resolved from the YAML directory.
+    if data.get("path"):
+        errors.append("data.yaml must resolve split paths from its own directory (omit 'path')")
+    for split in SPLITS:
+        if data.get(split) != f"images/{split}":
+            errors.append(f"data.yaml must set {split} to images/{split}")
+    expected_names = dict(enumerate(class_names))
+    if data.get("names") not in (class_names, expected_names):
+        errors.append("data.yaml names do not match conversion_report.json class order")
+    if "nc" in data and data["nc"] != len(class_names):
+        errors.append("data.yaml nc does not match the number of classes")
 
     return class_names, conversion
 

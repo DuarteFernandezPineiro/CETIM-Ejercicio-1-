@@ -1,0 +1,7 @@
+# NVIDIA CUDA 12.8 build. Driver must support CUDA 12.8.
+--index-url https://download.pytorch.org/whl/cu128
+--extra-index-url https://pypi.org/simple
+
+torch==2.10.0+cu128
+torchvision==0.25.0+cu128
+-r requirements.txt

@@ -1,0 +1,181 @@
+{
+  "dataset": "Construction and Demolition Waste Object Detection Dataset  (CODD)",
+  "splits": {
+    "training": {
+      "images": 1984,
+      "xml_annotations": 1984,
+      "objects": 10058,
+      "paired_images": 1984,
+      "missing_xml": 0,
+      "orphan_xml": 0,
+      "mean_objects_per_image": 5.07,
+      "median_objects_per_image": 3.0,
+      "min_objects_per_image": 1,
+      "max_objects_per_image": 51,
+      "image_dimensions": {
+        "1920x1200": 1984
+      },
+      "image_bytes": 394693131,
+      "classes": 10,
+      "sha256": "cd8b5d66f7ca3f4c98f490d2913fa93b62a4b24aac9a7521534c93b20a866818"
+    },
+    "validation": {
+      "images": 570,
+      "xml_annotations": 570,
+      "objects": 3237,
+      "paired_images": 570,
+      "missing_xml": 0,
+      "orphan_xml": 0,
+      "mean_objects_per_image": 5.679,
+      "median_objects_per_image": 2.0,
+      "min_objects_per_image": 1,
+      "max_objects_per_image": 58,
+      "image_dimensions": {
+        "1920x1200": 570
+      },
+      "image_bytes": 111329677,
+      "classes": 10,
+      "sha256": "f79e274462537fe3c17932007dae62159ad8dbdff348e4d6e3a7952cbfa101ec"
+    },
+    "testing": {
+      "images": 573,
+      "xml_annotations": 573,
+      "objects": 3224,
+      "paired_images": 573,
+      "missing_xml": 0,
+      "orphan_xml": 0,
+      "mean_objects_per_image": 5.627,
+      "median_objects_per_image": 3,
+      "min_objects_per_image": 1,
+      "max_objects_per_image": 72,
+      "image_dimensions": {
+        "1920x1200": 573
+      },
+      "image_bytes": 112170193,
+      "classes": 10,
+      "sha256": "23b0f6467943d5b539afe3d6fdf99dad001cc5bc718dcc92feae6ff2ab810e05"
+    }
+  },
+  "total_images": 3127,
+  "total_objects": 16519,
+  "classes": [
+    "brick",
+    "concrete",
+    "foam",
+    "general_w",
+    "gypsum_board",
+    "pipes",
+    "plastic",
+    "stone",
+    "tile",
+    "wood"
+  ],
+  "total_classes": 10,
+  "exact_duplicate_groups_across_splits": [],
+  "basenames_reused_across_splits": {
+    "1": [
+      "testing",
+      "training"
+    ],
+    "10": [
+      "training",
+      "validation"
+    ],
+    "13": [
+      "training",
+      "validation"
+    ],
+    "15": [
+      "testing",
+      "training"
+    ],
+    "2": [
+      "training",
+      "validation"
+    ],
+    "21": [
+      "training",
+      "validation"
+    ],
+    "22": [
+      "testing",
+      "training"
+    ],
+    "23": [
+      "testing",
+      "training"
+    ],
+    "24": [
+      "training",
+      "validation"
+    ],
+    "2836": [
+      "testing",
+      "training"
+    ],
+    "31": [
+      "training",
+      "validation"
+    ],
+    "38": [
+      "testing",
+      "training"
+    ],
+    "39": [
+      "training",
+      "validation"
+    ],
+    "43": [
+      "testing",
+      "training"
+    ],
+    "45": [
+      "testing",
+      "training"
+    ],
+    "5": [
+      "testing",
+      "training"
+    ],
+    "9": [
+      "testing",
+      "training"
+    ],
+    "12": [
+      "testing",
+      "validation"
+    ],
+    "28": [
+      "testing",
+      "validation"
+    ],
+    "41": [
+      "testing",
+      "validation"
+    ],
+    "48": [
+      "testing",
+      "validation"
+    ]
+  },
+  "issue_counts": {
+    "Object 29 (pipes) bbox is outside image bounds": 1,
+    "Object 1 (general_w) bbox is outside image bounds": 1,
+    "Object 3 (general_w) bbox is outside image bounds": 1,
+    "Object 5 (wood) bbox is outside image bounds": 5,
+    "Object 6 (wood) bbox is outside image bounds": 1,
+    "Object 26 (pipes) bbox is outside image bounds": 1,
+    "Object 4 (wood) bbox is outside image bounds": 9,
+    "Object 3 (wood) bbox is outside image bounds": 1,
+    "Object 9 (wood) bbox is outside image bounds": 1,
+    "Object 8 (wood) bbox is outside image bounds": 3,
+    "Object 14 (plastic) bbox is outside image bounds": 1,
+    "Object 28 (stone) bbox is outside image bounds": 1,
+    "Object 29 (general_w) bbox is outside image bounds": 1,
+    "Object 36 (plastic) bbox is outside image bounds": 1,
+    "Object 1 (wood) bbox is outside image bounds": 8,
+    "Object 2 (wood) bbox is outside image bounds": 6
+  },
+  "total_issues": 42,
+  "bbox_out_of_bounds": 42
+}

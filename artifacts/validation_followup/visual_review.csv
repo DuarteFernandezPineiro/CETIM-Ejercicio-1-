@@ -1,0 +1,13 @@
+﻿class,outcome,image,visual,gt_object_index_in_label_file,predicted_class,confidence,matched_iou,size,scene_objects,density,overlap,review_possible_cause,review_annotation_consistency,review_notes
+plastic,correct,other-2285.jpg,visual_review/plastic/correct_01_other-2285.jpg,2,plastic,0.9079514741897583,0.9951625980879087,medium,3,sparse_1_5,low_lt_0_1,,,
+plastic,false_negative,2965.jpg,visual_review/plastic/false_negative_01_2965.jpg,26,,,0.0,medium,30,dense_10_plus,moderate_0_1_0_5,,,
+plastic,classification_error,other-2185.jpg,visual_review/plastic/classification_error_01_other-2185.jpg,0,general_w,0.7977955341339111,0.9777026184285147,large,1,sparse_1_5,low_lt_0_1,,,
+plastic,localization_error,2957.jpg,visual_review/plastic/localization_error_01_2957.jpg,26,plastic,0.36879512667655945,0.4779006001066468,medium,31,dense_10_plus,low_lt_0_1,,,
+pipes,correct,plastic-1291.jpg,visual_review/pipes/correct_01_plastic-1291.jpg,2,pipes,0.8492673635482788,0.9577919358153699,medium,4,sparse_1_5,low_lt_0_1,,,
+pipes,false_negative,2966.jpg,visual_review/pipes/false_negative_01_2966.jpg,7,,,0.0,medium,45,dense_10_plus,low_lt_0_1,,,
+pipes,classification_error,2966.jpg,visual_review/pipes/classification_error_01_2966.jpg,11,plastic,0.7006568312644958,0.9614721613191626,medium,45,dense_10_plus,low_lt_0_1,,,
+pipes,localization_error,2961.jpg,visual_review/pipes/localization_error_01_2961.jpg,4,plastic,0.32556474208831787,0.1948899265149894,medium,34,dense_10_plus,low_lt_0_1,,,
+stone,correct,s-1765.jpg,visual_review/stone/correct_01_s-1765.jpg,2,stone,0.9261987209320068,0.9793771288641857,small,6,medium_6_9,low_lt_0_1,,,
+stone,false_negative,2966.jpg,visual_review/stone/false_negative_01_2966.jpg,43,,,0.0,small,45,dense_10_plus,moderate_0_1_0_5,,,
+stone,classification_error,2961.jpg,visual_review/stone/classification_error_01_2961.jpg,17,plastic,0.5522128343582153,0.9783795353013693,small,34,dense_10_plus,low_lt_0_1,,,
+stone,localization_error,2957.jpg,visual_review/stone/localization_error_01_2957.jpg,28,plastic,0.2853873074054718,0.19678893507614761,small,31,dense_10_plus,moderate_0_1_0_5,,,

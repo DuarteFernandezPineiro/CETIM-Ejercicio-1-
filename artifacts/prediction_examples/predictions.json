@@ -1,0 +1,185 @@
+{
+  "model": "yolov8n",
+  "experiment": "codd-yolov8n-img640-seed42",
+  "checkpoint": "best.pt",
+  "ultralytics": "8.4.210",
+  "torch": "2.10.0+cu128",
+  "settings": {
+    "imgsz": 640,
+    "confidence": 0.5,
+    "nms_iou": 0.5,
+    "device": "0"
+  },
+  "images_processed": 3,
+  "detections_total": 13,
+  "images": [
+    {
+      "image": "2966.jpg",
+      "width": 1920,
+      "height": 1200,
+      "annotated_image": "annotated/2966.jpg",
+      "detections": [
+        {
+          "class_id": 6,
+          "class_name": "plastic",
+          "confidence": 0.700657,
+          "bbox_xyxy_pixels": [
+            406.94,
+            977.9,
+            649.87,
+            1185.49
+          ]
+        },
+        {
+          "class_id": 6,
+          "class_name": "plastic",
+          "confidence": 0.658444,
+          "bbox_xyxy_pixels": [
+            1133.43,
+            163.79,
+            1320.23,
+            334.35
+          ]
+        },
+        {
+          "class_id": 6,
+          "class_name": "plastic",
+          "confidence": 0.596618,
+          "bbox_xyxy_pixels": [
+            1051.7,
+            132.22,
+            1643.88,
+            827.7
+          ]
+        },
+        {
+          "class_id": 6,
+          "class_name": "plastic",
+          "confidence": 0.564622,
+          "bbox_xyxy_pixels": [
+            1350.79,
+            132.04,
+            1645.94,
+            1008.71
+          ]
+        }
+      ]
+    },
+    {
+      "image": "other-2285.jpg",
+      "width": 1920,
+      "height": 1200,
+      "annotated_image": "annotated/other-2285.jpg",
+      "detections": [
+        {
+          "class_id": 6,
+          "class_name": "plastic",
+          "confidence": 0.908291,
+          "bbox_xyxy_pixels": [
+            1064.42,
+            144.17,
+            1422.55,
+            386.9
+          ]
+        },
+        {
+          "class_id": 6,
+          "class_name": "plastic",
+          "confidence": 0.907951,
+          "bbox_xyxy_pixels": [
+            1049.1,
+            770.47,
+            1478.78,
+            1042.98
+          ]
+        },
+        {
+          "class_id": 6,
+          "class_name": "plastic",
+          "confidence": 0.607617,
+          "bbox_xyxy_pixels": [
+            658.42,
+            385.38,
+            1113.26,
+            749.9
+          ]
+        }
+      ]
+    },
+    {
+      "image": "s-1765.jpg",
+      "width": 1920,
+      "height": 1200,
+      "annotated_image": "annotated/s-1765.jpg",
+      "detections": [
+        {
+          "class_id": 7,
+          "class_name": "stone",
+          "confidence": 0.943614,
+          "bbox_xyxy_pixels": [
+            1122.11,
+            844.66,
+            1222.07,
+            995.98
+          ]
+        },
+        {
+          "class_id": 7,
+          "class_name": "stone",
+          "confidence": 0.94115,
+          "bbox_xyxy_pixels": [
+            702.74,
+            264.51,
+            952.57,
+            395.65
+          ]
+        },
+        {
+          "class_id": 7,
+          "class_name": "stone",
+          "confidence": 0.935426,
+          "bbox_xyxy_pixels": [
+            753.03,
+            571.71,
+            936.81,
+            694.25
+          ]
+        },
+        {
+          "class_id": 7,
+          "class_name": "stone",
+          "confidence": 0.926911,
+          "bbox_xyxy_pixels": [
+            821.28,
+            881.72,
+            931.37,
+            980.73
+          ]
+        },
+        {
+          "class_id": 7,
+          "class_name": "stone",
+          "confidence": 0.926199,
+          "bbox_xyxy_pixels": [
+            1144.07,
+            529.42,
+            1221.09,
+            635.58
+          ]
+        },
+        {
+          "class_id": 7,
+          "class_name": "stone",
+          "confidence": 0.919137,
+          "bbox_xyxy_pixels": [
+            1129.5,
+            277.78,
+            1253.28,
+            351.75
+          ]
+        }
+      ]
+    }
+  ],
+  "created_at_utc": "2026-11-14T10:42:53.052395+00:00"
+}

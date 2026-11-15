@@ -1,0 +1,54 @@
+# Enunciado de CETIM y herramientas locales
+/IA_prueba_tecnica.pdf
+/graphify-out/
+/tmp/
+
+# Datasets descargados y salidas reproducibles
+/Construction and Demolition Waste Object Detection Dataset*/
+/data/
+/datasets/
+/artifacts/*
+!/artifacts/dataset_audit/
+!/artifacts/experiment_comparison/
+!/artifacts/final_validation/
+!/artifacts/final_test/
+!/artifacts/prediction_examples/
+!/artifacts/validation_followup/
+
+# Cachés y mosaicos automáticos dentro de los artefactos de entrega
+/artifacts/**/.prediction_cache/
+/artifacts/final_*/**/ultralytics/native_validation/val_batch*.jpg
+/artifacts/final_*/**/ultralytics/native_validation/confusion_matrix*.png
+*.cache
+
+# Pesos de modelos y ejecuciones locales
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.safetensors
+/runs/
+/checkpoints/
+/wandb/
+/mlruns/
+*.log
+
+# Entornos y cachés de Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Configuración local y archivos del sistema
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
